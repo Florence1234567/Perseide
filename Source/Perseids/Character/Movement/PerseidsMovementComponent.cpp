@@ -76,7 +76,9 @@ void UPerseidsMovementComponent::PostStateMove(float DeltaTime)
 		if (BurstCoolTimer >= GetBurstJumpCooldown())
 			bIsBurstCooling = false;
 	}
-	
+
+	UE_LOG(LogTemp, Log, TEXT("bCanBurstJump: %s"), bCanBurstJump ? TEXT("true") : TEXT("false"));
+
 	LastPendingInput = PendingInputVector;
 	
 	bHasCachedFloor = false;
@@ -229,9 +231,7 @@ EAirZDirection UPerseidsMovementComponent::GetAirZDirection() const
 
 bool UPerseidsMovementComponent::CanJump_Implementation()
 {
-	//@TODO - Add coyote time
-
-	if (!IsMovingOnGround())
+	if (!IsMovingOnGround() || bIsConsuming && !bCanBurstJump)
 	{
 		return false;
 	}
@@ -254,7 +254,7 @@ bool UPerseidsMovementComponent::CanJump_Implementation()
 
 bool UPerseidsMovementComponent::CanDash_Implementation()
 {
-	if (bIsDashCooling)
+	if (bIsDashCooling || bIsConsuming)
 		return false;
 	
 	//Check if there is an obstacle in front of the player to prevent wasting light.
@@ -320,6 +320,7 @@ void UPerseidsMovementComponent::TryJump()
 		{
 			Velocity.Z = GetJumpInitialSpeed() * GetBurstJumpMultiplier();
 			bJustBurstJumped = true;
+			StopFocus();
 		}
 		else
 			Velocity.Z = GetJumpInitialSpeed();

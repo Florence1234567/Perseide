@@ -37,6 +37,18 @@ void APerseidsCharacter::DoJump()
 		MovementComponent->TryJump();
 }
 
+void APerseidsCharacter::BeginFocus()
+{
+	if (MovementComponent)
+		MovementComponent->StartFocus();
+}
+
+void APerseidsCharacter::EndFocus()
+{
+	if (MovementComponent)
+		MovementComponent->StopFocus();
+}
+
 void APerseidsCharacter::DoDash()
 {
 	if (MovementComponent)

@@ -35,15 +35,49 @@ void UPerseidsMovementComponent::PostStateMove(float DeltaTime)
 	if (bIsDashing)
 	{
 		DashTimer += DeltaTime;
-
+		
 		Velocity = DashDirection * GetDashSpeed();
 		
 		if (DashTimer >= GetDashDuration())
 		{
 			bIsDashing = false;
+			bIsDashCooling = true;
 			DashTimer = 0.f;
 		}
 	}
+
+	if (bIsDashCooling)
+	{
+		DashTimer += DeltaTime;
+
+		if (DashTimer >= GetDashCooldown())
+		{
+			bIsDashCooling = false;
+			DashTimer = 0.f;
+		}
+	}
+
+	// Focus / Burst Jump
+	if (bIsConsuming)
+	{
+		FocusTimer += DeltaTime;
+		
+		if (FocusTimer >= FocusTime)
+		{
+			bCanBurstJump = true;
+			FocusTimer = 0.f;
+		}
+	}
+
+	if (bIsBurstCooling)
+	{
+		BurstCoolTimer += DeltaTime;
+		
+		if (BurstCoolTimer >= GetBurstJumpCooldown())
+			bIsBurstCooling = false;
+	}
+	
+	LastPendingInput = PendingInputVector;
 	
 	bHasCachedFloor = false;
 }
@@ -89,6 +123,7 @@ float UPerseidsMovementComponent::GetMaxSpeed() const
 {
 	float Multiplier = 1.f;
 	Multiplier *= bSprinting ? GetPreset()->SprintMultiplier : 1.f;
+	Multiplier *= bIsConsuming ? GetPreset()->SpeedMultiplierWhileFocused : 1.f;
 	
 	FBaseMovementStats FoundOverride = FindPresetOverride(); 
 	return FoundOverride.MaxSpeed.Get(GetPreset()->MaxSpeed) * Multiplier;
@@ -128,8 +163,8 @@ float UPerseidsMovementComponent::GetTurningBoost() const
 
 float UPerseidsMovementComponent::GetMaxFloorCosine() const
 {
-	float Degree = GetPreset()->MaxFloorAngle;
-	return FMath::Cos(FMath::DegreesToRadians(Degree));
+	float Angle = GetPreset()->MaxFloorAngle;
+	return FMath::Cos(FMath::DegreesToRadians(Angle));
 }
 
 float UPerseidsMovementComponent::GetDashSpeed() const
@@ -145,6 +180,31 @@ float UPerseidsMovementComponent::GetDashDuration() const
 float UPerseidsMovementComponent::GetDashCost() const
 {
 	return GetPreset()->DashRadiusCost;
+}
+
+float UPerseidsMovementComponent::GetBurstJumpMinCost() const
+{
+	return GetPreset()->BurstJumpMinCost;
+}
+
+float UPerseidsMovementComponent::GetDashCooldown() const
+{
+	return GetPreset()->DashCooldown;
+}
+
+float UPerseidsMovementComponent::GetSpeedMultiplierWhileFocused() const
+{
+	return GetPreset()->SpeedMultiplierWhileFocused;
+}
+
+float UPerseidsMovementComponent::GetBurstJumpMultiplier() const
+{
+	return GetPreset()->BurstJumpMultiplier;
+}
+
+float UPerseidsMovementComponent::GetBurstJumpCooldown() const
+{
+	return GetPreset()->BurstJumpCooldown;
 }
 
 float UPerseidsMovementComponent::GetJumpInitialSpeed() const
@@ -194,6 +254,9 @@ bool UPerseidsMovementComponent::CanJump_Implementation()
 
 bool UPerseidsMovementComponent::CanDash_Implementation()
 {
+	if (bIsDashCooling)
+		return false;
+	
 	//Check if there is an obstacle in front of the player to prevent wasting light.
 	/*FVector Start =  UpdatedComponent->GetComponentLocation() + GetForwardVector();
 
@@ -242,30 +305,48 @@ bool UPerseidsMovementComponent::CanDash_Implementation()
 	return true;
 }
 
+
+bool UPerseidsMovementComponent::CanFocus_Implementation()
+{
+	return !bIsBurstCooling;
+}
+
 void UPerseidsMovementComponent::TryJump()
 {
 	if (CanJump())
 	{
 		OnJumped.Broadcast();
-		Velocity.Z = GetJumpInitialSpeed();
+		if (bCanBurstJump)
+		{
+			Velocity.Z = GetJumpInitialSpeed() * GetBurstJumpMultiplier();
+			bJustBurstJumped = true;
+		}
+		else
+			Velocity.Z = GetJumpInitialSpeed();
+
 		SetMovementState(UMovementState_Falling::StaticClass());
 	}
+}
+
+void UPerseidsMovementComponent::StartBurstJumpCooldown()
+{
+	bIsBurstCooling = true;
 }
 
 void UPerseidsMovementComponent::TryDash()
 {
 	if (bIsDashing)
 		return;
-
-	DashDirection = PendingInputVector;
+	
+	DashDirection = LastPendingInput;
 	DashDirection.Z = 0.0f;
-
+	
 	if (DashDirection.IsNearlyZero())
 	{
 		DashDirection = GetForwardVector();
 		DashDirection.Z = 0.0f;
 	}
-
+	
 	DashDirection.Normalize();
 	
 	if (CanDash())
@@ -273,6 +354,18 @@ void UPerseidsMovementComponent::TryDash()
 		bIsDashing = true;
 		DashTimer = 0.0f;
 	}
+}
+
+void UPerseidsMovementComponent::StartFocus()
+{
+	if (CanFocus())
+		bIsConsuming = true;
+}
+
+void UPerseidsMovementComponent::StopFocus()
+{
+	bIsConsuming = false;
+	bCanBurstJump = false;
 }
 
 void UPerseidsMovementComponent::StartSprint()
@@ -430,3 +523,12 @@ FVector UPerseidsMovementComponent::HandleSlopeBoosting(const FVector& SlideResu
 	
 	return Result;
 }
+
+void UPerseidsMovementComponent::SetLastValidPos(FVector Pos)
+{
+	if (LastValidPosArray.Num() > 10)
+		LastValidPosArray.Pop();
+	
+	LastValidPosArray.Add(Pos);
+}
+

@@ -74,7 +74,7 @@ public:
 	float RisingGravity = 980.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Walking")
-	float MaxFloorAngle = 45f;
+	float MaxFloorAngle = 45;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Jump")
 	float JumpSpeed = 750.f;
@@ -87,7 +87,24 @@ public:
 	float DashDuration = 0.25f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dash")
+	float DashCooldown = 0.3;
+
+	/** Focus / Burst Jump */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Focus")
+	float SpeedMultiplierWhileFocused = 0.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Burst Jump")
+	float BurstJumpMultiplier = 2.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Burst Jump")
+	float BurstJumpCooldown = 1;
+	
+	/** Cost*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cost")
 	float DashRadiusCost = 50;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cost")
+	float BurstJumpMinCost = 150;
 	
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Jump")

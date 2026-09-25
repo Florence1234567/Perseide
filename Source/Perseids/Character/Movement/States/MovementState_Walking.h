@@ -14,4 +14,6 @@ class PERSEIDS_API UMovementState_Walking : public USimpleMovementState
 	virtual void CalcVelocity(float DeltaTime) override;
 	virtual void EvaluateTransitions() override;
 	virtual void UpdatePosition(float DeltaTime) override;
+
+	float SaveTimer = 0.f;
 };

@@ -31,6 +31,8 @@ void UMovementState_Walking::EvaluateTransitions()
 
 void UMovementState_Walking::UpdatePosition(float DeltaTime)
 {
+	SaveTimer += DeltaTime;
+	
 	UPerseidsMovementComponent* MovementComp = GetMovementComp<UPerseidsMovementComponent>();
 	USceneComponent* UpdatedComponent = MovementComp->UpdatedComponent;
 	auto& Velocity = MovementComp->Velocity;
@@ -70,4 +72,10 @@ void UMovementState_Walking::UpdatePosition(float DeltaTime)
 	}
 	
 	Velocity = ((UpdatedComponent->GetComponentLocation() - StartingPosition) / DeltaTime) * FVector(1,1,0);
+
+	if (SaveTimer > 1.f)
+	{
+		MovementComp->SetLastValidPos(UpdatedComponent->GetComponentLocation());
+		SaveTimer = 0.f;
+	}
 }

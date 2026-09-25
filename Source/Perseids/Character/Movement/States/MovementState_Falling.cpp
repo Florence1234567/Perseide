@@ -45,11 +45,16 @@ void UMovementState_Falling::UpdatePosition(float DeltaTime)
 		FVector Delta = (StartingVelocity + Velocity) / 2 * DeltaTime;
 
 		FHitResult Hit;
-		OwningMovementComponent->SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentRotation(), true, Hit);
 
+		OwningMovementComponent->SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentRotation(), true, Hit);
+		
 		if (MovementComp->IsWalkableGround(&Hit))
 		{
 			MovementComp->SetFloorFromHit(Hit);
+
+			if (MovementComp->JustBurstJumped())
+				MovementComp->StartBurstJumpCooldown();
+			
 			MovementComp->SetMovementState(UMovementState_Walking::StaticClass());
 			return;
 		}
@@ -58,8 +63,15 @@ void UMovementState_Falling::UpdatePosition(float DeltaTime)
 		{
 			// Slide along the surface
 			FVector AdjustedDelta = OwningMovementComponent->ComputeSlideVector(Delta, 1.0f - Hit.Time, Hit.Normal, Hit);
+			
 			float AdjustedTick = (1.f - Hit.Time) * DeltaTime;
-			OwningMovementComponent->SlideAlongSurface(Delta, 1.0f - Hit.Time, Hit.Normal, Hit);
+
+			OwningMovementComponent->SlideAlongSurface(
+				Delta,
+				1.0f - Hit.Time,
+				Hit.Normal,
+				Hit
+			);
 			
 			if (AdjustedTick > UE_KINDA_SMALL_NUMBER)
 			{

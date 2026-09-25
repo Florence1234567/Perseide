@@ -53,9 +53,19 @@ public:
 	virtual float GetTurningBoost() const;
 	virtual float GetMaxFloorCosine() const;
 
+	//Dash
 	virtual float GetDashSpeed() const;
 	virtual float GetDashDuration() const;
+	virtual float GetDashCooldown() const;
+
+	// Focus / Burst Jump
+	virtual float GetSpeedMultiplierWhileFocused() const;
+	virtual float GetBurstJumpMultiplier() const;
+	virtual float GetBurstJumpCooldown() const;
+	
+	// Ability Cost
 	virtual float GetDashCost() const;
+	virtual float GetBurstJumpMinCost() const;
 	
 	virtual float GetJumpInitialSpeed() const;
 	
@@ -70,9 +80,17 @@ public:
 		return bSprinting;
 	};
 
+	bool JustBurstJumped() const
+	{
+		return bJustBurstJumped;
+	};
+
 	UFUNCTION(BlueprintNativeEvent)
 	bool CanJump();
 
+	UFUNCTION(BlueprintNativeEvent)
+	bool CanFocus();
+	
 	/// Checks if the player has enough vision to execute the dash.
 	/// @return if the player can execute TryDash()
 	UFUNCTION(BlueprintNativeEvent)
@@ -80,7 +98,13 @@ public:
 	
 	///-- Movement Actions --///
 	void TryJump();
-
+	
+	/// Start focusing to determine if the player can Burst Jump or not.
+	void StartFocus();
+	void StopFocus();
+	
+	void StartBurstJumpCooldown();
+	
 	/// Calculates the dash direction and allows the dash to be started if everything checks out.  
 	void TryDash();
 	
@@ -100,7 +124,8 @@ public:
 
 	FVector HandleSlopeBoosting(const FVector& SlideResult, const FVector& Delta, const float Time, const FVector& Normal, const FHitResult& Hit) const;
 
-
+	void SetLastValidPos(FVector Pos);
+	
 	//--- Delegates ---//
 	UPROPERTY(BlueprintAssignable)
 	FOnMovementEvent OnApexReached;
@@ -111,13 +136,31 @@ public:
 protected:
 	
 	bool bSprinting = false;
-
+	
+	FVector LastPendingInput;
+	
+	TArray<FVector> LastValidPosArray;
+	
+	/** Focus */
+	bool bIsConsuming = false;
+	//Temp
+	float FocusTimer = 0;
+	float FocusTime = 3;
+	
 	/** Dash Data*/
 	bool bIsDashing = false;
+	bool bIsDashCooling = false;
 	float DashTimer = 0;
 	FVector DashDirection;
+
+	/** Burst Jump*/
+	bool bCanBurstJump = false;
+	bool bJustBurstJumped = false;
+	bool bIsBurstCooling = false;
+	float BurstCoolTimer = 0;
 	
 	/** Floor Data*/
 	FFindFloorResult Floor;
 	bool bHasCachedFloor;
 };
+

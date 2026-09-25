@@ -39,6 +39,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SimpleCharacter")
 	void DoJump();
 
+	///Attempts to Burst Jump
+	UFUNCTION(BlueprintCallable, Category = "SimpleCharacter")
+	void BeginFocus();
+
+	UFUNCTION(BlueprintCallable, Category = "SimpleCharacter")
+	void EndFocus();
+	
 	///Attempts to dash
 	UFUNCTION(BlueprintCallable, Category = "SimpleCharacter")
 	void DoDash();
